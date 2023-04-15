@@ -3,23 +3,39 @@
 #include <fstream>
 #include <vector>
 
+template <typename T>
+void printVec(std::vector<T>& vec){
+    if(vec.size() == 0) return;
+    std::cout << "[ ";
+    for(size_t i = 0; i < vec.size() - 1; i++){
+        std::cout << vec[i] << ", ";
+    }
+    std::cout << vec.back() << " ]";
+}
+
 int main(){
 
     int strip[30000];
     int index = (30000 / 2);
 
-    std::vector<int> loopStarts;
-    int loopEnd;
+    std::vector<int> loopStarts, loopEnds;
     
-    std::ifstream in("inputDoc.txt");
+    std::ifstream code("code.txt");
+    if(code.fail()){
+        std::cout << "Error reading code file\n";
+        code.close();
+        return 1;
+    }
+
+    std::ifstream in("input.txt");
     if(in.fail()){
-        std::cout << "Error reading file\n";
+        std::cout << "Error reading input\n";
         in.close();
         return 1;
     }
 
     std::ofstream out;
-    out.open("outputDoc.txt");
+    out.open("output.txt");
     if(out.fail()){
         std::cout << "Could create output doc\n";
         out.close();
@@ -28,13 +44,12 @@ int main(){
 
     std::string input;
     std::string temp;
-    while(in >> temp){
+    while(code >> temp){
         input.append(temp);
     }
     
     for(size_t i = 0; i < input.length(); i++)
     {
-        std::cout << index << ", ";
         switch(input[i])
         {
             case '>':
@@ -64,30 +79,42 @@ int main(){
             }
             case ',':
             {
-
+                if(in){
+                    strip[index] = in.get();
+                }
                 break;
             }
             case '[':
             {
-                if(strip[index] == 0){
-                    if(loopEnd > i) i = loopEnd;
-                    if(loopStarts.size() >= 1 && loopStarts.back() == i){
-                        loopStarts.pop_back();
-                    }
-                }
-                else
-                {
+                if(strip[index] != 0){
                     if(loopStarts.size() == 0 || i != loopStarts.back()){
                         loopStarts.push_back(i);
+                    }
+                }
+                if(strip[index] == 0){
+                    if(loopEnds.size() != 0){
+                        i = loopEnds.back();
+                        loopEnds.pop_back();
+                    } else {
+                        int numOpen = 1;
+                        while(numOpen > 0){
+                            i++;
+                            if(input[i] == ']') numOpen--;
+                            if(input[i] == '[') numOpen++;
+                        }
                     }
                 }
                 break;
             }
             case ']':
             {
+                if(strip[index] == 0){
+                    loopStarts.pop_back();
+                }
                 if(strip[index] != 0){
-                    loopEnd = i;
-                    i = loopStarts.back() - 1;
+                    if(loopStarts.size() != 0){
+                        i = loopStarts.back() - 1;
+                    }
                 }
                 break;
             }
@@ -98,7 +125,8 @@ int main(){
         }
     }
     
-    in.close();
+    code.close();
     out.close();
+    in.close();
     return 0;
 }
